@@ -292,7 +292,9 @@ export default class JsonImport extends Plugin {
 			let notefile = objfield(row, settings.jsonName);
 			// Ignore lines with an empty name field
 			if (typeof notefile === "number") notefile = notefile.toString();
-			if (!notefile || notefile.length == 0) continue;
+			if (!notefile || notefile.length == 0){
+				notefile = row.text.match(/# (.+)\n/)[1]
+			};
 			// Add prefix and suffix to filename
 			notefile = settings.notePrefix + notefile + settings.noteSuffix;
 
