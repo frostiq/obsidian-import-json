@@ -303,7 +303,7 @@ export default class JsonImport extends Plugin {
 				
 				let notefile;
 				if (!settings.jsonName || settings.jsonName.length == 0) {
-					notefile = row.text.match(/# (.+)\n/)[1];
+					notefile = row.text.match(/^#? (.+)\n/)[1];
 				} else {
 					notefile = objfield(row, settings.jsonName);
 				}
