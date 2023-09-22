@@ -296,55 +296,60 @@ export default class JsonImport extends Plugin {
 		let entries:any = Array.isArray(topobj) ? topobj.entries() : Object.entries(topobj);
 
 		for (const [index, row] of entries) {
-			// Add our own fields to the ROW
-			row.SourceIndex = index;
-			if (sourcefilename) row.SourceFilename = sourcefilename;   // provide access to the filename from which the data was taken.
-			let notefile;
-
-			if (!settings.jsonName || settings.jsonName.length == 0) {
-				notefile = row.text.match(/# (.+)\n/)[1];
-			} else {
-				notefile = objfield(row, settings.jsonName);
-			}
-
-			// Ignore lines with an empty name field
-			if (typeof notefile === "number") notefile = notefile.toString();
-			if (!notefile || notefile.length == 0) continue;
-
-			// Add prefix and suffix to filename
-			notefile = settings.notePrefix + notefile + settings.noteSuffix;
-
-			let body:any;
 			try {
-				body = template(row);   // convert HTML to markdown
-			} catch (err) {
-				console.error(`${err.message}\nFOR ROW:\n${row}`)
-				continue;
-			}
-			if (body.contains("[object Object]")) {
-				console.log(`[object Object] appears in '${notefile}'`);
-				new Notice(`Incomplete conversion for '${notefile}'. Look for '[object Object]' (also reported in console)`);
-			}
+				// Add our own fields to the ROW
+				row.SourceIndex = index;
+				if (sourcefilename) row.SourceFilename = sourcefilename;   // provide access to the filename from which the data was taken.
+				let notefile;
 
-			let filename = settings.folderName + "/" + this.validFilename(notefile) + ".md";
-			await this.checkPath(filename);
-			// Delete the old version, if it exists
-			let file = this.app.vault.getAbstractFileByPath(filename);
-			if (!file)
-				await this.app.vault.create(filename, body).catch(err => console.log(`app.vault.create: ${err}`));
-			else
-				switch (settings.handleExistingNote)
-				{
-					case ExistingNotes.REPLACE_EXISTING:
-						await this.app.vault.modify(file as TFile, body).catch(err => console.log(`app.vault.modify: ${err}`));
-						break;
-					case ExistingNotes.APPEND_TO_EXISTING:
-						await this.app.vault.append(file as TFile, body).catch(err => console.log(`app.vault.append: ${err}`));
-						break;
-					default:
-						new Notice(`Note already exists for '${filename}' - ignoring entry in data file`);
-						break;
+				if (!settings.jsonName || settings.jsonName.length == 0) {
+					notefile = row.text.match(/# (.+)\n/)[1];
+				} else {
+					notefile = objfield(row, settings.jsonName);
 				}
+
+				// Ignore lines with an empty name field
+				if (typeof notefile === "number") notefile = notefile.toString();
+				if (!notefile || notefile.length == 0) continue;
+
+				// Add prefix and suffix to filename
+				notefile = settings.notePrefix + notefile + settings.noteSuffix;
+
+				let body:any;
+				try {
+					body = template(row);   // convert HTML to markdown
+				} catch (err) {
+					console.error(`${err.message}\nFOR ROW:\n${row}`)
+					new Notice(`Error: ${err.message} for ${notefile}`);
+					continue;
+				}
+				if (body.contains("[object Object]")) {
+					console.log(`[object Object] appears in '${notefile}'`);
+					new Notice(`Incomplete conversion for '${notefile}'. Look for '[object Object]' (also reported in console)`);
+				}
+
+				let filename = settings.folderName + "/" + this.validFilename(notefile) + ".md";
+				await this.checkPath(filename);
+				// Delete the old version, if it exists
+				let file = this.app.vault.getAbstractFileByPath(filename);
+				if (!file)
+					await this.app.vault.create(filename, body).catch(err => console.log(`app.vault.create: ${err}`));
+				else
+					switch (settings.handleExistingNote)
+					{
+						case ExistingNotes.REPLACE_EXISTING:
+							await this.app.vault.modify(file as TFile, body).catch(err => console.log(`app.vault.modify: ${err}`));
+							break;
+						case ExistingNotes.APPEND_TO_EXISTING:
+							await this.app.vault.append(file as TFile, body).catch(err => console.log(`app.vault.append: ${err}`));
+							break;
+						default:
+							new Notice(`Note already exists for '${filename}' - ignoring entry in data file`);
+							break;
+					}
+			} catch (err) {
+				new Notice(`Error: ${err.message}`);
+			}
 		}
 	}
 }
