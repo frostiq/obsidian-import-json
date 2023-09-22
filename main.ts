@@ -300,8 +300,8 @@ export default class JsonImport extends Plugin {
 				// Add our own fields to the ROW
 				row.SourceIndex = index;
 				if (sourcefilename) row.SourceFilename = sourcefilename;   // provide access to the filename from which the data was taken.
+				
 				let notefile;
-
 				if (!settings.jsonName || settings.jsonName.length == 0) {
 					notefile = row.text.match(/# (.+)\n/)[1];
 				} else {
@@ -320,7 +320,7 @@ export default class JsonImport extends Plugin {
 					body = template(row);   // convert HTML to markdown
 				} catch (err) {
 					console.error(`${err.message}\nFOR ROW:\n${row}`)
-					new Notice(`Error: ${err.message} for ${notefile}`);
+					new Notice(`Error applying template: ${err.message} for ${row.uuid}`);
 					continue;
 				}
 				if (body.contains("[object Object]")) {
@@ -348,7 +348,8 @@ export default class JsonImport extends Plugin {
 							break;
 					}
 			} catch (err) {
-				new Notice(`Error: ${err.message}`);
+				new Notice(`Error: ${err.message} for ${row.uuid}`);
+				throw err;
 			}
 		}
 	}
