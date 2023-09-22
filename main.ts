@@ -213,6 +213,16 @@ export default class JsonImport extends Plugin {
 		return hb_utils.value("");
 	}
 
+	hb_formatDate() {
+		let len     = arguments.length-1;
+		let options = arguments[len];
+		let orig = arguments[0];
+		if (arguments.length != 2 || typeof orig !== "string") return hb_utils.value(orig, this, options);
+		let date = new Date(orig)
+		let formatted = date.toLocaleDateString('en-US', { year: "numeric", month: "long", day: "numeric" });
+		return hb_utils.value(formatted, this, options);
+	}
+
 	/**
 	 * Check if the path for filename exists, if it doesn't then create it
 	 * @param filename 
@@ -249,6 +259,7 @@ export default class JsonImport extends Plugin {
 		handlebars.registerHelper('replacereg', this.hb_replacereg);
 		handlebars.registerHelper('strsplit',   this.hb_strsplit);
 		handlebars.registerHelper('setvar',     this.hb_setvar);
+		handlebars.registerHelper('formatDate', this.hb_formatDate);
 		if (helperfile) {
 			let initJsonHelpers = new Function('handlebars', await helperfile.text());
 			if (initJsonHelpers) initJsonHelpers(handlebars);
@@ -288,13 +299,18 @@ export default class JsonImport extends Plugin {
 			// Add our own fields to the ROW
 			row.SourceIndex = index;
 			if (sourcefilename) row.SourceFilename = sourcefilename;   // provide access to the filename from which the data was taken.
-			
-			let notefile = objfield(row, settings.jsonName);
+			let notefile;
+
+			if (!settings.jsonName || settings.jsonName.length == 0) {
+				notefile = row.text.match(/# (.+)\n/)[1];
+			} else {
+				notefile = objfield(row, settings.jsonName);
+			}
+
 			// Ignore lines with an empty name field
 			if (typeof notefile === "number") notefile = notefile.toString();
-			if (!notefile || notefile.length == 0){
-				notefile = row.text.match(/# (.+)\n/)[1]
-			};
+			if (!notefile || notefile.length == 0) continue;
+
 			// Add prefix and suffix to filename
 			notefile = settings.notePrefix + notefile + settings.noteSuffix;
 
